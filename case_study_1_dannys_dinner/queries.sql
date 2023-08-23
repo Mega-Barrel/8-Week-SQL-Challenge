@@ -242,3 +242,77 @@ GROUP BY
 ORDER BY
 	s.customer_id
 ;
+
+-- Bonus Questions
+
+-- Join All The Things
+SELECT
+	s.customer_id,
+	s.order_date,
+	m.product_name,
+	m.price,
+	CASE
+		WHEN s.order_date >= me.join_date THEN 'Y'
+		ELSE 'N'
+	END AS member
+FROM
+	dannys_dinner.sales s
+LEFT JOIN
+	dannys_dinner.members me
+ON
+	s.customer_id = me.customer_id
+INNER JOIN
+	dannys_dinner.menu m
+ON
+	s.product_id = m.product_id
+ORDER BY
+	s.customer_id,
+	s.order_date
+;
+
+-- Rank All The Things
+WITH raw_members AS (
+	SELECT
+		s.customer_id,
+		s.order_date,
+		m.product_name,
+		m.price,
+		CASE
+			WHEN s.order_date >= me.join_date THEN 'Y'
+			ELSE 'N'
+		END AS member
+	FROM
+		dannys_dinner.sales s
+	LEFT JOIN
+		dannys_dinner.members me
+	ON
+		s.customer_id = me.customer_id
+	INNER JOIN
+		dannys_dinner.menu m
+	ON
+		s.product_id = m.product_id
+	ORDER BY
+		s.customer_id,
+		s.order_date
+)
+
+SELECT
+	customer_id,
+	order_date,
+	product_name,
+	price,
+	member,
+	
+	CASE
+		WHEN member = 'N' THEN NULL
+		ELSE DENSE_RANK() OVER (
+			PARTITION BY
+				customer_id,
+				member
+			ORDER BY
+				order_date
+		)
+	END AS ranking
+FROM
+	raw_members
+;
